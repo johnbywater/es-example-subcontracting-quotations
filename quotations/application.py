@@ -26,7 +26,7 @@ class QuotationsApplication(SQLAlchemyApplication):
         return quotation
 
     def add_line_item_details(
-            self, quotation_number, remarks, unit_price, currency, quantity
+        self, quotation_number, remarks, unit_price, currency, quantity
     ):
         quotation = self.get_quotation(quotation_number)
         quotation.add_line_item_details(remarks, unit_price, currency, quantity)
@@ -46,4 +46,3 @@ class QuotationsApplication(SQLAlchemyApplication):
         quotation = self.get_quotation(quotation_number)
         quotation.approve()
         quotation.__save__()
-

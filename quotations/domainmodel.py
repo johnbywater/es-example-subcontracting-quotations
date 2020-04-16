@@ -1,15 +1,22 @@
 from eventsourcing.domain.model.aggregate import BaseAggregateRoot
 
+from exceptions import StatusError
+
 
 class Quotation(BaseAggregateRoot):
     __subclassevents__ = True
 
+    STATUS_DRAFT = "draft"
+    STATUS_PENDING_SUBCONTRACTOR_APPROVAL = "pending_subcontractor_approval"
+    STATUS_REJECTED = "rejected"
+    STATUS_PENDING_PR = "pending_pr"
+
     def __init__(self, quotation_number, subcontractor_ref, **kwargs):
         super(Quotation, self).__init__(**kwargs)
         self._quotation_number = quotation_number
-        self._status = 'draft'
-        self._line_items = []
         self._subcontractor_ref = subcontractor_ref
+        self._status = self.STATUS_DRAFT
+        self._line_items = []
 
     @property
     def quotation_number(self):
@@ -28,6 +35,7 @@ class Quotation(BaseAggregateRoot):
         return self._line_items
 
     def add_line_item_details(self, remarks, unit_price, currency, quantity):
+        self.assert_status(self.STATUS_DRAFT)
         self.__trigger_event__(
             event_class=self.LineItemDetailsAdded,
             remarks=remarks,
@@ -35,6 +43,10 @@ class Quotation(BaseAggregateRoot):
             currency=currency,
             quantity=quantity,
         )
+
+    def assert_status(self, status):
+        if self._status != status:
+            raise StatusError("Status is '%s' not '%s'" % (self._status, status))
 
     class LineItemDetailsAdded(BaseAggregateRoot.Event):
         def mutate(self, obj: "Quotation") -> None:
@@ -48,26 +60,28 @@ class Quotation(BaseAggregateRoot):
             )
 
     def send_to_subcontractor(self):
-        assert self._status == 'draft'
+        self.assert_status(Quotation.STATUS_DRAFT)
         self.__trigger_event__(self.SentToSubcontractor)
 
     class SentToSubcontractor(BaseAggregateRoot.Event):
         def mutate(self, obj: "Quotation"):
-            obj._status = 'pending_vendor'
+            obj._status = Quotation.STATUS_PENDING_SUBCONTRACTOR_APPROVAL
 
     def reject(self):
+        self.assert_status(self.STATUS_PENDING_SUBCONTRACTOR_APPROVAL)
         self.__trigger_event__(self.Rejected)
 
     class Rejected(BaseAggregateRoot.Event):
         def mutate(self, obj: "Quotation"):
-            obj._status = 'rejected'
+            obj._status = Quotation.STATUS_REJECTED
 
     def approve(self):
+        self.assert_status(Quotation.STATUS_PENDING_SUBCONTRACTOR_APPROVAL)
         self.__trigger_event__(self.Approved)
 
     class Approved(BaseAggregateRoot.Event):
         def mutate(self, obj: "Quotation"):
-            obj._status = 'pending_pr'
+            obj._status = Quotation.STATUS_PENDING_PR
 
 
 class LineItem(object):
