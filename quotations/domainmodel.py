@@ -1,6 +1,6 @@
 from eventsourcing.domain.model.aggregate import BaseAggregateRoot
 
-from exceptions import StatusError
+from quotations.exceptions import StatusError
 
 
 class Quotation(BaseAggregateRoot):

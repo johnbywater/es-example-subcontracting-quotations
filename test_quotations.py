@@ -1,7 +1,7 @@
 from decimal import Decimal
 from unittest import TestCase
 
-from exceptions import StatusError
+from quotations.exceptions import StatusError
 from quotations.application import QuotationsApplication
 from quotations.domainmodel import Quotation
 
