@@ -1,14 +1,20 @@
 from decimal import Decimal
 from unittest import TestCase
 
+from eventsourcing.application.notificationlog import NotificationLogReader
+from eventsourcing.application.popo import PopoApplication
+from eventsourcing.system.definition import AbstractSystemRunner
+
+from quotations.applications.notifications import NotificationsApplication
+from quotations.applications.quotations import QuotationsApplication
+from quotations.domainmodel import EmailNotification, Quotation
 from quotations.exceptions import StatusError
-from quotations.application import QuotationsApplication
-from quotations.domainmodel import Quotation
+from quotations.system import QuotationsSystem
 
 
 class TestQuotationsApplication(TestCase):
     def test_prepare_quotation(self):
-        with QuotationsApplication() as app:
+        with QuotationsApplication.mixin(PopoApplication)() as app:
             app: QuotationsApplication
 
             # Create a new quotation.
@@ -67,7 +73,7 @@ class TestQuotationsApplication(TestCase):
                 )
 
     def test_reject_prepared_quotation(self):
-        with QuotationsApplication() as app:
+        with QuotationsApplication.mixin(PopoApplication)() as app:
             app: QuotationsApplication
             app.create_new_quotation(
                 quotation_number="001", subcontractor_ref="Subcontractor #1",
@@ -93,7 +99,7 @@ class TestQuotationsApplication(TestCase):
                 app.subcontractor_approves_quotation(quotation_number="001")
 
     def test_approve_prepared_quotation(self):
-        with QuotationsApplication() as app:
+        with QuotationsApplication.mixin(PopoApplication)() as app:
             app: QuotationsApplication
             app.create_new_quotation(
                 quotation_number="001", subcontractor_ref="Subcontractor #1",
@@ -117,3 +123,37 @@ class TestQuotationsApplication(TestCase):
 
             with self.assertRaises(StatusError):
                 app.subcontractor_approves_quotation(quotation_number="001")
+
+
+class TestQuotationsSystem(TestCase):
+    def test_notifications(self):
+        with QuotationsSystem(infrastructure_class=PopoApplication) as runner:
+            runner: AbstractSystemRunner
+            quotations = runner.get(QuotationsApplication)
+            notifications = runner.get(NotificationsApplication)
+
+            quotations.create_new_quotation(
+                quotation_number="001", subcontractor_ref="Subcontractor #1",
+            )
+            quotations.add_line_item_details(
+                quotation_number="001",
+                remarks="Free text",
+                unit_price=Decimal("1000.00"),
+                currency="USD",
+                quantity=1,
+            )
+
+            reader = NotificationLogReader(notifications.notification_log)
+            self.assertEqual(len(reader.read_list()), 0)
+
+            quotations.send_quotation_to_subcontractor(quotation_number="001")
+
+            reader = NotificationLogReader(notifications.notification_log)
+            notification_events = list(
+                map(notifications.get_event_from_notification, reader.read())
+            )
+            self.assertEqual(len(notification_events), 1)
+            self.assertIsInstance(notification_events[0], EmailNotification.Created)
+            email: EmailNotification.Created = notification_events[0]
+            self.assertEqual(email.quotation_number, "001")
+            self.assertEqual(email.subcontractor_ref, "Subcontractor #1")

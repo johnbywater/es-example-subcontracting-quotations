@@ -1,11 +1,11 @@
 from uuid import NAMESPACE_URL, uuid5
 
-from eventsourcing.application.sqlalchemy import SQLAlchemyApplication
+from eventsourcing.application.process import ProcessApplication
 
 from quotations.domainmodel import Quotation
 
 
-class QuotationsApplication(SQLAlchemyApplication):
+class QuotationsApplication(ProcessApplication):
     persist_event_type = Quotation.Event
 
     def create_new_quotation(self, quotation_number, subcontractor_ref):

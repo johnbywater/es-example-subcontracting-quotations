@@ -61,7 +61,11 @@ class Quotation(BaseAggregateRoot):
 
     def send_to_subcontractor(self):
         self.assert_status(Quotation.STATUS_DRAFT)
-        self.__trigger_event__(self.SentToSubcontractor)
+        self.__trigger_event__(
+            self.SentToSubcontractor,
+            quotation_number=self.quotation_number,
+            subcontractor_ref=self.subcontractor_ref,
+        )
 
     class SentToSubcontractor(BaseAggregateRoot.Event):
         def mutate(self, obj: "Quotation"):
@@ -90,3 +94,12 @@ class LineItem(object):
         self.unit_price = unit_price
         self.currency = currency
         self.quantity = quantity
+
+
+class EmailNotification(BaseAggregateRoot):
+    __subclassevents__ = True
+
+    def __init__(self, quotation_number, subcontractor_ref, **kwargs):
+        super(EmailNotification, self).__init__(**kwargs)
+        self.quotation_number = quotation_number
+        self.subcontractor_ref = subcontractor_ref
