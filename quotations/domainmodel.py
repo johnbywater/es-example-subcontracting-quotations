@@ -55,6 +55,20 @@ class Quotation(BaseAggregateRoot):
         def mutate(self, obj: "Quotation"):
             obj._status = 'pending_vendor'
 
+    def reject(self):
+        self.__trigger_event__(self.Rejected)
+
+    class Rejected(BaseAggregateRoot.Event):
+        def mutate(self, obj: "Quotation"):
+            obj._status = 'rejected'
+
+    def approve(self):
+        self.__trigger_event__(self.Approved)
+
+    class Approved(BaseAggregateRoot.Event):
+        def mutate(self, obj: "Quotation"):
+            obj._status = 'pending_pr'
+
 
 class LineItem(object):
     def __init__(self, remarks, unit_price, currency, quantity):

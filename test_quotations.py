@@ -7,7 +7,7 @@ from quotations.application import QuotationsApplication
 class TestQuantationsApplication(TestCase):
     def test_prepare_quotation(self):
         with QuotationsApplication() as app:
-            assert isinstance(app, QuotationsApplication)
+            app: QuotationsApplication
 
             # Create a new quotation.
             app.create_new_quotation(
@@ -47,3 +47,41 @@ class TestQuantationsApplication(TestCase):
             app.send_quotation_to_subcontractor(quotation_number="001")
             quotation = app.get_quotation(quotation_number="001")
             self.assertEqual(quotation.status, 'pending_vendor')
+
+    def test_reject_prepared_quotation(self):
+        with QuotationsApplication() as app:
+            app: QuotationsApplication
+            app.create_new_quotation(
+                quotation_number="001", subcontractor_ref="Subcontractor #1",
+            )
+            app.add_line_item_details(
+                quotation_number="001",
+                remarks="Free text",
+                unit_price=Decimal("1000.00"),
+                currency="USD",
+                quantity=1,
+            )
+            app.send_quotation_to_subcontractor(quotation_number="001")
+
+            app.subcontractor_rejects_quotation(quotation_number="001")
+            quotation = app.get_quotation(quotation_number="001")
+            self.assertEqual(quotation.status, 'rejected')
+
+    def test_approve_prepared_quotation(self):
+        with QuotationsApplication() as app:
+            app: QuotationsApplication
+            app.create_new_quotation(
+                quotation_number="001", subcontractor_ref="Subcontractor #1",
+            )
+            app.add_line_item_details(
+                quotation_number="001",
+                remarks="Free text",
+                unit_price=Decimal("1000.00"),
+                currency="USD",
+                quantity=1,
+            )
+            app.send_quotation_to_subcontractor(quotation_number="001")
+
+            app.subcontractor_approves_quotation(quotation_number="001")
+            quotation = app.get_quotation(quotation_number="001")
+            self.assertEqual(quotation.status, 'pending_pr')

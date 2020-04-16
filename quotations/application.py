@@ -36,3 +36,14 @@ class QuotationsApplication(SQLAlchemyApplication):
         quotation = self.get_quotation(quotation_number)
         quotation.send_to_subcontractor()
         quotation.__save__()
+
+    def subcontractor_rejects_quotation(self, quotation_number):
+        quotation = self.get_quotation(quotation_number)
+        quotation.reject()
+        quotation.__save__()
+
+    def subcontractor_approves_quotation(self, quotation_number):
+        quotation = self.get_quotation(quotation_number)
+        quotation.approve()
+        quotation.__save__()
+
