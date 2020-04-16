@@ -4,7 +4,7 @@ from unittest import TestCase
 from quotations.application import QuotationsApplication
 
 
-class TestQuantationsApplication(TestCase):
+class TestQuotationsApplication(TestCase):
     def test_prepare_quotation(self):
         with QuotationsApplication() as app:
             app: QuotationsApplication
