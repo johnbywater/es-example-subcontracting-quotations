@@ -10,7 +10,7 @@ class NotificationsApplication(ProcessApplication):
         pass
 
     @policy.register(Quotation.SentToSubcontractor)
-    def _(self, repository, event):
+    def _(self, _, event):
         return EmailNotification.__create__(
             quotation_number=event.quotation_number,
             subcontractor_ref=event.subcontractor_ref,

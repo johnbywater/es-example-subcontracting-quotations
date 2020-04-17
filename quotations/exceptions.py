@@ -4,3 +4,7 @@ class QuotationsError(Exception):
 
 class StatusError(QuotationsError):
     pass
+
+
+class QuotationNotFound(QuotationsError):
+    pass

@@ -8,7 +8,7 @@ from eventsourcing.system.definition import AbstractSystemRunner
 from quotations.applications.notifications import NotificationsApplication
 from quotations.applications.quotations import QuotationsApplication
 from quotations.domainmodel import EmailNotification, Quotation
-from quotations.exceptions import StatusError
+from quotations.exceptions import QuotationNotFound, StatusError
 from quotations.system import QuotationsSystem
 
 
@@ -72,6 +72,10 @@ class TestQuotationsApplication(TestCase):
                     quantity=1,
                 )
 
+            # Quotation not found.
+            with self.assertRaises(QuotationNotFound):
+                app.get_quotation("002")
+
     def test_reject_prepared_quotation(self):
         with QuotationsApplication.mixin(PopoApplication)() as app:
             app: QuotationsApplication
@@ -87,16 +91,16 @@ class TestQuotationsApplication(TestCase):
             )
             app.send_quotation_to_subcontractor(quotation_number="001")
 
-            app.subcontractor_rejects_quotation(quotation_number="001")
+            app.reject_quotation(quotation_number="001")
             quotation = app.get_quotation(quotation_number="001")
             self.assertEqual(quotation.status, Quotation.STATUS_REJECTED)
 
             # Check can't reject or approve once rejected.
             with self.assertRaises(StatusError):
-                app.subcontractor_rejects_quotation(quotation_number="001")
+                app.reject_quotation(quotation_number="001")
 
             with self.assertRaises(StatusError):
-                app.subcontractor_approves_quotation(quotation_number="001")
+                app.approve_quotation(quotation_number="001")
 
     def test_approve_prepared_quotation(self):
         with QuotationsApplication.mixin(PopoApplication)() as app:
@@ -113,16 +117,16 @@ class TestQuotationsApplication(TestCase):
             )
             app.send_quotation_to_subcontractor(quotation_number="001")
 
-            app.subcontractor_approves_quotation(quotation_number="001")
+            app.approve_quotation(quotation_number="001")
             quotation = app.get_quotation(quotation_number="001")
             self.assertEqual(quotation.status, Quotation.STATUS_PENDING_PR)
 
             # Check can't reject or approve once approved.
             with self.assertRaises(StatusError):
-                app.subcontractor_rejects_quotation(quotation_number="001")
+                app.reject_quotation(quotation_number="001")
 
             with self.assertRaises(StatusError):
-                app.subcontractor_approves_quotation(quotation_number="001")
+                app.approve_quotation(quotation_number="001")
 
 
 class TestQuotationsSystem(TestCase):
