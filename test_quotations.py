@@ -144,11 +144,10 @@ class TestQuotationsSystem(TestCase):
             )
 
             reader = NotificationLogReader(notifications.notification_log)
-            self.assertEqual(len(reader.read_list()), 0)
+            self.assertEqual(len(list(reader.read())), 0)
 
             quotations.send_quotation_to_subcontractor(quotation_number="001")
 
-            reader = NotificationLogReader(notifications.notification_log)
             notification_events = list(
                 map(notifications.get_event_from_notification, reader.read())
             )
